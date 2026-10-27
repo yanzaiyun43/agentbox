@@ -9,13 +9,86 @@
 // We keep parsing minimal & dependency-free so the single-file module upload works.
 
 export const EMAIL_WORKER_SOURCE = String.raw`
-function decodeQP(str) {
-  return str
-    .replace(/=\r?\n/g, "")
-    .replace(/=([0-9A-Fa-f]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16)));
+// Charset-aware byte decoding.
+// The naive path (atob -> JS string) yields a latin1 view of the bytes, which
+// silently mangles every non-ASCII body — a GBK-encoded Chinese mail shows up as
+// mojibake. So: produce bytes first, then decode with the charset the MIME part
+// actually declares. TextDecoder knows gbk / gb18030 / big5 natively.
+function charsetOf(contentType) {
+  const m = /charset\s*=\s*"?([\w.:-]+)"?/i.exec(contentType || "");
+  if (!m) return "utf-8";
+  const cs = m[1].toLowerCase().trim();
+  // Common aliases the WHATWG spec folds together; TextDecoder handles them,
+  // but normalise a couple of odd ones we have seen in the wild.
+  if (cs === "utf8") return "utf-8";
+  if (cs === "gb2312" || cs === "gbk" || cs === "x-gbk") return "gb18030";
+  return cs;
 }
-function decodeBase64(str) {
-  try { return atob(str.replace(/\s/g, "")); } catch { return str; }
+function decodeBytes(bytes, charset) {
+  try {
+    return new TextDecoder(charset, { fatal: false }).decode(bytes);
+  } catch (e) {
+    // Unknown label -> fall back to UTF-8, then to a latin1-ish best effort.
+    try { return new TextDecoder("utf-8", { fatal: false }).decode(bytes); }
+    catch (e2) { return String.fromCharCode.apply(null, bytes); }
+  }
+}
+function base64ToBytes(str) {
+  const clean = str.replace(/\s/g, "");
+  try {
+    const bin = atob(clean);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch (e) { return null; }
+}
+function binaryToBytes(str) {
+  // The raw mail is a latin1 view: one char per byte.
+  const out = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) out[i] = str.charCodeAt(i) & 0xff;
+  return out;
+}
+function qpToBytes(str) {
+  // Soft line breaks first, then =XX escapes. Everything else is a literal byte.
+  const s = str.replace(/=\r?\n/g, "");
+  const out = [];
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === "=" && /^[0-9A-Fa-f]{2}$/.test(s.substr(i + 1, 2))) {
+      out.push(parseInt(s.substr(i + 1, 2), 16));
+      i += 2;
+    } else {
+      out.push(c.charCodeAt(0) & 0xff);
+    }
+  }
+  return new Uint8Array(out);
+}
+function decodeMimeBody(rawText, encoding, charset) {
+  const enc = (encoding || "").toLowerCase();
+  if (enc.indexOf("base64") > -1) {
+    const bytes = base64ToBytes(rawText);
+    if (bytes) return decodeBytes(bytes, charset);
+  } else if (enc.indexOf("quoted-printable") > -1) {
+    return decodeBytes(qpToBytes(rawText), charset);
+  }
+  // 7bit / 8bit / no encoding: rawText is still the latin1 byte view, so the
+  // bytes are intact. Decode with whatever charset the part declares.
+  return decodeBytes(binaryToBytes(rawText), charset);
+}
+// RFC 2047 encoded-words in headers. Same charset problem as bodies.
+function decodeRFC2047(s) {
+  if (!s) return s;
+  return s.replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g, (_, cs, enc, txt) => {
+    const charset = charsetOf("charset=" + cs);
+    try {
+      if (enc.toUpperCase() === "B") {
+        const bytes = base64ToBytes(txt);
+        return bytes ? decodeBytes(bytes, charset) : txt;
+      }
+      const bytes = qpToBytes(txt.replace(/_/g, " "));
+      return decodeBytes(bytes, charset);
+    } catch (e) { return txt; }
+  });
 }
 function parseHeaders(block) {
   const headers = {};
@@ -32,16 +105,17 @@ function parseHeaders(block) {
       }
     }
   }
+  // Header values are a latin1 view of raw bytes. RFC 2047 encoded-words are
+  // pure ASCII so they pass through untouched; the rare unencoded UTF-8 header
+  // is repaired here by re-reading its bytes as UTF-8.
+  for (const k in headers) {
+    const v = headers[k];
+    if (/[\x80-\xff]/.test(v)) {
+      try { headers[k] = new TextDecoder("utf-8", { fatal: true }).decode(binaryToBytes(v)); }
+      catch (e) { /* keep the latin1 view */ }
+    }
+  }
   return headers;
-}
-function decodeRFC2047(s) {
-  if (!s) return s;
-  return s.replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g, (_, cs, enc, txt) => {
-    try {
-      if (enc.toUpperCase() === "B") return decodeURIComponent(escape(decodeBase64(txt)));
-      return decodeURIComponent(escape(decodeQP(txt.replace(/_/g, " "))));
-    } catch { return txt; }
-  });
 }
 function parseEmail(raw) {
   const sep = raw.indexOf("\r\n\r\n") > -1 ? "\r\n\r\n" : "\n\n";
@@ -63,23 +137,20 @@ function parseEmail(raw) {
       const ph = parseHeaders(part.slice(0, pAt));
       let pbody = part.slice(pAt + pSplit.length);
       const rawBody = pbody;
-      const enc = (ph["content-transfer-encoding"] || "").toLowerCase();
-      if (enc.includes("base64")) pbody = decodeBase64(pbody);
-      else if (enc.includes("quoted-printable")) pbody = decodeQP(pbody);
+      const enc = ph["content-transfer-encoding"] || "";
       const pct = ph["content-type"] || "";
+      pbody = decodeMimeBody(pbody, enc, charsetOf(pct));
       const disp = ph["content-disposition"] || "";
       if (pct.includes("text/plain") && !disp.includes("attachment")) { text += pbody; }
       else if (pct.includes("text/html") && !disp.includes("attachment")) { html += pbody; }
       else if (disp.includes("attachment") || disp.includes("inline") && !pct.includes("text/")) {
         const fnMatch = disp.match(/filename="?([^"\n;]+)"?/i) || pct.match(/name="?([^"\n;]+)"?/i);
         const ct = pct.split(";")[0].trim() || "application/octet-stream";
-        attachments.push({ filename: fnMatch ? fnMatch[1].trim() : null, contentType: ct, raw: rawBody, isBase64: enc.includes("base64"), size: pbody.length });
+        attachments.push({ filename: fnMatch ? fnMatch[1].trim() : null, contentType: ct, raw: rawBody, isBase64: (enc || "").toLowerCase().indexOf("base64") > -1, size: pbody.length });
       }
     }
   } else {
-    const enc = (headers["content-transfer-encoding"] || "").toLowerCase();
-    if (enc.includes("base64")) body = decodeBase64(body);
-    else if (enc.includes("quoted-printable")) body = decodeQP(body);
+    body = decodeMimeBody(body, headers["content-transfer-encoding"] || "", charsetOf(ctype));
     if (ctype.includes("text/html")) html = body; else text = body;
   }
   let fromName = "", fromAddr = "";
@@ -103,7 +174,15 @@ export default {
       }
       const merged = new Uint8Array(chunks.reduce((a, c) => a + c.length, 0));
       let off = 0; for (const c of chunks) { merged.set(c, off); off += c.length; }
-      raw = new TextDecoder("utf-8").decode(merged);
+      // Keep the raw mail as a *binary string* (one char per byte, latin1 view).
+      // Decoding as UTF-8 here would destroy every GBK/Big5 byte before the
+      // per-part charset step ever runs — that is what produced mojibake bodies.
+      const CHUNK = 8192;
+      const parts = [];
+      for (let i = 0; i < merged.length; i += CHUNK) {
+        parts.push(String.fromCharCode.apply(null, merged.subarray(i, i + CHUNK)));
+      }
+      raw = parts.join("");
     } catch (e) { raw = ""; }
 
     const parsed = parseEmail(raw);
