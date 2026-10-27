@@ -232,7 +232,7 @@ export default function SettingsPage() {
               <CardTitle className="text-xs font-bold uppercase tracking-tight">Cloudflare 连接</CardTitle>
               {s?.configured && (
                 <Badge className="ml-auto gap-1.5 border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" variant="outline">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Connected
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> 已连接
                 </Badge>
               )}
             </div>
@@ -423,8 +423,8 @@ export default function SettingsPage() {
             )}
             <Separator />
             <p className="text-xs text-muted-foreground">
-              D1, Workers, and Email Routing are on Cloudflare&apos;s free tier and do not require a credit card.
-              Attachment storage (R2) is auto-provisioned when available — R2 is free up to 10 GB/month but requires a credit card on file.
+              D1、Workers 与邮件路由都在 Cloudflare 免费额度内，不需要信用卡。
+              附件存储（R2）在可用时会自动创建 —— R2 每月 10 GB 以内免费，但账户需绑定信用卡。
             </p>
           
       {/* Remove domain confirmation */}
