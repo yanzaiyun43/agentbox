@@ -173,9 +173,12 @@ export default {
         "DELETE FROM attachments WHERE message_id NOT IN (SELECT id FROM messages)"
       ).run();
       // Drop auto-created inboxes that have gone quiet, so the list doesn't grow forever.
-      // Inboxes the user created explicitly (label != 'auto') are never removed here.
+      // Discriminator is route_id, NOT label: label is free text the user can type
+      // anything into, while every inbox created through the app gets an explicit
+      // Email Routing rule and therefore a non-null route_id. Rows written by the
+      // auto_inbox_on_message trigger always leave route_id NULL.
       await env.DB.prepare(
-        "DELETE FROM inboxes WHERE label = 'auto' AND (last_message_at IS NULL OR last_message_at < ?)"
+        "DELETE FROM inboxes WHERE route_id IS NULL AND (last_message_at IS NULL OR last_message_at < ?)"
       ).bind(cutoff).run();
     } catch (e) { /* best-effort */ }
   },
