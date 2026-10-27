@@ -214,7 +214,7 @@ export function InboxList({
               <AlertTriangle className="h-5 w-5 text-destructive" /> 删除收件箱
             </DialogTitle>
             <DialogDescription>
-              这会永久删除 <span className="break-all font-mono text-foreground">{delTarget?.address}</span> 以及{" "}
+              这会永久删除 <span className="break-all font-mono text-foreground">{delTarget?.address}</span> 以及
               <b>它收到的全部邮件</b>。此后发往该地址的新邮件不再保存，且不可撤销。
             </DialogDescription>
           </DialogHeader>
