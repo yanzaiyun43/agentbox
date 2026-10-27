@@ -430,8 +430,8 @@ export default function KeysPage() {
                 <CardTitle className="text-xs font-bold uppercase tracking-tight">MCP 服务</CardTitle>
               </div>
               <CardDescription className="text-xs">
-                Streamable-HTTP endpoint <code className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-500">{base}/mcp</code>{" "}
-                · same <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code> auth{" "}
+                Streamable-HTTP 端点 <code className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-500">{base}/mcp</code>{" "}
+                · 同样用 <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code> 鉴权{" "}
                 · 把 /v1 的全部操作以 MCP 工具形式暴露出来。
               </CardDescription>
             </CardHeader>
