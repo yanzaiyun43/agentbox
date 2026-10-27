@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, CheckCircle2, Cloud, Rocket, ExternalLink, Trash2, AlertTriangle, Plus, X, RefreshCw, Star, Paperclip } from "lucide-react";
+import { Loader2, CheckCircle2, Cloud, Rocket, ExternalLink, Trash2, AlertTriangle, Plus, X, RefreshCw, Star, Paperclip, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,9 +29,23 @@ type Settings = {
   provisioned: boolean;
   r2Enabled: boolean;
   workerName: string | null;
+  retentionSeconds: number;
 };
 
 type Step = { step: string; ok: boolean; detail?: string };
+
+// Retention presets. `seconds: -1` marks the "custom" entry, which reads the
+// number + unit inputs instead of a fixed value. 0 disables cleanup entirely.
+const RETENTION_PRESETS: { key: string; label: string; seconds: number }[] = [
+  { key: "off", label: "Keep forever", seconds: 0 },
+  { key: "3m", label: "3 minutes", seconds: 180 },
+  { key: "30m", label: "30 minutes", seconds: 1800 },
+  { key: "1h", label: "1 hour", seconds: 3600 },
+  { key: "1d", label: "1 day", seconds: 86400 },
+  { key: "1w", label: "1 week", seconds: 604800 },
+  { key: "1mo", label: "1 month", seconds: 2592000 },
+  { key: "custom", label: "Custom…", seconds: -1 },
+];
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -48,9 +62,32 @@ export default function SettingsPage() {
   const [removeDomainOpen, setRemoveDomainOpen] = useState(false);
   const [pendingRemoveDomain, setPendingRemoveDomain] = useState<string | null>(null);
   const [settingPrimary, setSettingPrimary] = useState<string | null>(null);
+  const [retentionPick, setRetentionPick] = useState<string>("off");
+  const [retentionCustomValue, setRetentionCustomValue] = useState("1");
+  const [retentionCustomUnit, setRetentionCustomUnit] = useState("hours");
+  const [savingRetention, setSavingRetention] = useState(false);
 
   function load() {
-    fetch("/api/settings").then((r) => r.json()).then((d) => setS(d));
+    fetch("/api/settings").then((r) => r.json()).then((d) => {
+      setS(d);
+      // Reflect the saved policy in the picker. A value that matches no preset
+      // lands on "Custom…" with the inputs pre-filled, so it round-trips.
+      const secs = Number(d?.retentionSeconds ?? 0) || 0;
+      const hit = RETENTION_PRESETS.find((p) => p.seconds === secs);
+      setRetentionPick(hit ? hit.key : secs > 0 ? "custom" : "off");
+      if (secs > 0 && !hit) {
+        if (secs % 86400 === 0) {
+          setRetentionCustomUnit("days");
+          setRetentionCustomValue(String(secs / 86400));
+        } else if (secs % 3600 === 0) {
+          setRetentionCustomUnit("hours");
+          setRetentionCustomValue(String(secs / 3600));
+        } else {
+          setRetentionCustomUnit("minutes");
+          setRetentionCustomValue(String(Math.max(1, Math.round(secs / 60))));
+        }
+      }
+    });
   }
   useEffect(load, []);
 
@@ -133,6 +170,31 @@ export default function SettingsPage() {
     setSteps(d.steps || []);
     if (d.ok) toast.success("Provisioned! Email Routing is live.");
     else toast.error(d.error || "Provisioning failed");
+    load();
+  }
+
+  async function saveRetention() {
+    let seconds = 0;
+    if (retentionPick === "custom") {
+      const n = Number(retentionCustomValue);
+      const mult = retentionCustomUnit === "days" ? 86400 : retentionCustomUnit === "hours" ? 3600 : 60;
+      if (!Number.isFinite(n) || n <= 0) return toast.error("Enter a positive number");
+      seconds = Math.round(n * mult);
+    } else {
+      const hit = RETENTION_PRESETS.find((p) => p.key === retentionPick);
+      seconds = hit ? hit.seconds : 0;
+    }
+    setSavingRetention(true);
+    const res = await fetch("/api/retention", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ seconds }),
+    });
+    const d = await res.json();
+    setSavingRetention(false);
+    if (!res.ok) return toast.error(d.error || "Failed");
+    if (d.cronWarning) toast.warning(`Saved, but the cleanup cron could not be installed: ${d.cronWarning}`);
+    else toast.success(seconds > 0 ? "Retention policy saved" : "Cleanup disabled");
     load();
   }
 
@@ -386,6 +448,114 @@ export default function SettingsPage() {
         </DialogContent>
       </Dialog>
 </CardContent>
+        </Card>
+
+        <Card className="rounded-lg">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-500/25 bg-violet-500/10 text-violet-400">
+                <Clock className="h-[22px] w-[22px]" />
+              </div>
+              <CardTitle className="text-xs font-bold uppercase tracking-tight">Auto cleanup</CardTitle>
+              {s?.retentionSeconds ? (
+                <Badge className="ml-auto gap-1.5 border-violet-500/30 bg-violet-500/15 text-violet-600 dark:text-violet-400" variant="outline">
+                  {RETENTION_PRESETS.find((p) => p.seconds === s.retentionSeconds)?.label ??
+                    `${Math.round(s.retentionSeconds / 60)} min`}
+                </Badge>
+              ) : (
+                <Badge className="ml-auto gap-1.5" variant="outline">Off</Badge>
+              )}
+            </div>
+            <CardDescription>
+              Delete mail automatically once it is older than the chosen age. Cleanup runs on a
+              one-minute Cloudflare cron, so the effective delay is your setting plus up to a minute.
+              Inboxes you created by hand are kept; auto-created ones disappear with their mail.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Keep mail for</Label>
+              <Select value={retentionPick} onValueChange={setRetentionPick} disabled={savingRetention}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RETENTION_PRESETS.map((p) => (
+                    <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {retentionPick === "custom" && (
+              <div className="flex items-end gap-2">
+                <div className="flex-1 space-y-2">
+                  <Label htmlFor="ret-n">Amount</Label>
+                  <Input
+                    id="ret-n"
+                    type="number"
+                    min={1}
+                    inputMode="numeric"
+                    value={retentionCustomValue}
+                    onChange={(e) => setRetentionCustomValue(e.target.value)}
+                    disabled={savingRetention}
+                  />
+                </div>
+                <div className="w-36 space-y-2">
+                  <Label>Unit</Label>
+                  <Select value={retentionCustomUnit} onValueChange={setRetentionCustomUnit} disabled={savingRetention}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">minutes</SelectItem>
+                      <SelectItem value="hours">hours</SelectItem>
+                      <SelectItem value="days">days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button onClick={saveRetention} disabled={savingRetention || !s?.configured}>
+                {savingRetention && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save policy
+              </Button>
+              {s?.retentionSeconds ? (
+                <Button
+                  variant="outline"
+                  disabled={savingRetention}
+                  onClick={() => {
+                    setRetentionPick("off");
+                    // Save immediately: "Keep forever" is the safe default.
+                    setSavingRetention(true);
+                    fetch("/api/retention", {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ seconds: 0 }),
+                    })
+                      .then((r) => r.json())
+                      .then((d) => {
+                        if (d.error) toast.error(d.error);
+                        else toast.success("Cleanup disabled");
+                        load();
+                      })
+                      .finally(() => setSavingRetention(false));
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Disable cleanup
+                </Button>
+              ) : null}
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              The cron trigger is installed on the <span className="font-mono">agentbox-email</span> worker
+              the first time you save a policy. Mail is deleted from D1 outright — there is no trash folder,
+              so set a value you are comfortable losing mail at.
+            </p>
+          </CardContent>
         </Card>
        </div>
       </div>

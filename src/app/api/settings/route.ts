@@ -16,6 +16,7 @@ export async function GET() {
     provisioned: (await getSetting("provisioned")) === "1",
     r2Enabled: (await getSetting("r2_enabled")) === "1",
     workerName: await getSetting("worker_name"),
+    retentionSeconds: Number((await getSetting("retention_seconds")) ?? 0) || 0,
   });
 }
 

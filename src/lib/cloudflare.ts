@@ -212,6 +212,27 @@ export async function deleteD1Database(c: CfConfig, databaseId: string) {
   });
 }
 
+// --- Cron Triggers (retention sweep) ---
+// The worker exposes a `scheduled` handler that deletes mail older than
+// `retention_seconds` (D1 settings). We install a one-minute cron so a 3-minute
+// retention setting is honoured within ~1 minute of accuracy.
+export async function getWorkerCrons(c: CfConfig, scriptName: string): Promise<string[]> {
+  const r = await cf<{ schedules: { cron: string }[] }>(
+    c.token,
+    `/accounts/${c.accountId}/workers/scripts/${scriptName}/schedules`
+  );
+  return (r?.schedules || []).map((x) => x.cron);
+}
+
+export async function setWorkerCrons(c: CfConfig, scriptName: string, crons: string[]) {
+  // The API expects a bare array here (not { crons: [...] }) — a wrapped body
+  // is rejected with 10026 "Could not parse request body".
+  await cf(c.token, `/accounts/${c.accountId}/workers/scripts/${scriptName}/schedules`, {
+    method: "PUT",
+    body: JSON.stringify(crons.map((cron) => ({ cron }))),
+  });
+}
+
 // --- R2 bucket (attachment storage, optional — requires CC on Cloudflare) ---
 const R2_BUCKET_NAME = "agentbox-attachments";
 export { R2_BUCKET_NAME };

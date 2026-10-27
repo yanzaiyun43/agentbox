@@ -154,5 +154,30 @@ export default {
       }
     } catch (e) { /* swallow: never bounce mail on a storage hiccup */ }
   },
+
+  // Retention sweep. Runs on a Cloudflare Cron Trigger (installed by the app).
+  // Reads retention_seconds from D1 settings; 0/absent means "keep forever".
+  async scheduled(event, env, ctx) {
+    let secs = 0;
+    try {
+      const row = await env.DB.prepare(
+        "SELECT value FROM settings WHERE key = 'retention_seconds'"
+      ).first();
+      secs = row && Number(row.value) || 0;
+    } catch (e) { return; }
+    if (!secs || secs <= 0) return;
+    const cutoff = Date.now() - secs * 1000;
+    try {
+      await env.DB.prepare("DELETE FROM messages WHERE received_at < ?").bind(cutoff).run();
+      await env.DB.prepare(
+        "DELETE FROM attachments WHERE message_id NOT IN (SELECT id FROM messages)"
+      ).run();
+      // Drop auto-created inboxes that have gone quiet, so the list doesn't grow forever.
+      // Inboxes the user created explicitly (label != 'auto') are never removed here.
+      await env.DB.prepare(
+        "DELETE FROM inboxes WHERE label = 'auto' AND (last_message_at IS NULL OR last_message_at < ?)"
+      ).bind(cutoff).run();
+    } catch (e) { /* best-effort */ }
+  },
 };
 `;
