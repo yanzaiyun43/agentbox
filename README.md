@@ -20,8 +20,6 @@
 > 这是 [mastomii/agentbox](https://github.com/mastomii/agentbox) 的 fork，遵循上游 **MIT** 协议。
 > 在上游基础上做了若干本地增强（界面汉化、MCP 工具扩充、自动建箱、自动清理、字符集修复），
 > 明细见 [与上游的差异](#与上游的差异)。
->
-> 当前线上实例：**https://mail.ailmel.top**
 
 ---
 
@@ -114,7 +112,7 @@ AgentBox 面板 / 智能体 API    通过 Cloudflare REST API 读
 
 最快的方式，无需本地环境：
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyanzaiyun43%2Fagentbox&env=CF_API_TOKEN,AGENTBOX_SECRET&envDescription=CF_API_TOKEN%3A%20Cloudflare%20API%20%E4%BB%A4%E7%89%8C%EF%BC%88Workers%2BD1%2BEmail%20Routing%EF%BC%89%E3%80%82AGENTBOX_SECRET%3A%20%E6%89%A7%E8%A1%8C%20%60openssl%20rand%20-hex%2032%60&project-name=agentbox&repository-name=agentbox)
+> 在 Vercel 里 **New Project → 导入本仓库**，框架自动识别为 Next.js，然后在 Environment Variables 里填下面两个变量即可。
 
 部署时填两个环境变量：
 
