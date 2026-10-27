@@ -291,7 +291,7 @@ export default function KeysPage() {
               </div>
               <CardDescription className="text-xs">
                 Base URL <code className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-500">{base}/v1</code>{" "}
-                · every request needs <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>{" "}
+                · 每个请求都要带 <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>{" "}
                 · 所有时间戳均为 epoch 毫秒。
               </CardDescription>
             </CardHeader>
@@ -313,7 +313,7 @@ export default function KeysPage() {
               />
               <Endpoint
                 method="POST" path="/v1/inboxes"
-                desc={`Create an inbox. With an empty body you get a random address (e.g. swift-fox-9a@${domain}). Pass "local" to choose the part before the @.`}
+                desc={`创建收件箱。请求体留空则生成随机地址（如 swift-fox-9a@${domain}）；传 "local" 可自选 @ 前面那段。`}
                 body={[
                   { name: "local", type: "string", desc: "@ 前面的地址段，会被规范化为 [a-z0-9._-]。留空则随机。" },
                   { name: "label", type: "string", desc: "可选备注名，存在收件箱上。" },
@@ -321,15 +321,15 @@ export default function KeysPage() {
                 response={`{ "id": "inbox_ab12cd34",
   "address": "support-bot@${domain}" }
 
-// 409 { "error": "exists" }            address taken
-// 409 { "error": "rule_limit_reached" } 200 routes/domain`}
+// 409 { "error": "exists" }            地址已被占用
+// 409 { "error": "rule_limit_reached" } 单域 200 条路由上限`}
               />
               <Endpoint
                 method="DELETE" path="/v1/inboxes/{id}"
                 desc="释放收件箱：删除它的路由规则（腾出单域 200 条中的一个名额），并清空已存邮件。幂等。"
                 response={`{ "ok": true, "id": "inbox_ab12cd34" }
 
-// 404 { "error": "unknown inbox" }`}
+// 404 { "error": "unknown inbox" } 收件箱不存在`}
               />
               <Endpoint
                 method="GET" path="/v1/inboxes/{id}/messages"
