@@ -233,6 +233,90 @@ export async function markSeen(ids: string[], ownerEmail: string): Promise<void>
   );
 }
 
+// --- search / maintenance (used by the MCP extras) ---
+// Free-text search across the owner's mail. Matches sender, subject and body;
+// `address` narrows it to one inbox. Deliberately simple LIKE matching — D1 has
+// no FTS, and agent workloads search short, exact strings (OTP senders, domains).
+export async function searchMessages(
+  ownerEmail: string,
+  q: string,
+  address?: string,
+  limit = 50,
+): Promise<(MessageRecord & { preview?: string })[]> {
+  const like = `%${q.replace(/[!%_]/g, (c) => "!" + c)}%`;
+  const addrClause = address ? " AND m.address = ?" : "";
+  const params: unknown[] = address
+    ? [ownerEmail, like, like, like, address.toLowerCase(), limit]
+    : [ownerEmail, like, like, like, limit];
+  const rows = await query<MsgRow & { preview: string | null }>(
+    `SELECT m.* FROM messages m JOIN inboxes i ON i.address = m.address
+      WHERE i.owner_email = ?
+        AND (m.subject LIKE ? ESCAPE '!' OR m.from_addr LIKE ? ESCAPE '!' OR m.text LIKE ? ESCAPE '!')${addrClause}
+      ORDER BY m.received_at DESC LIMIT ?`,
+    params
+  );
+  return rows.map((r) => ({ ...toRecord(r), preview: r.preview || undefined }));
+}
+
+// Newest message in one inbox, or null when the inbox is empty.
+export async function latestMessage(
+  address: string,
+  ownerEmail: string,
+): Promise<MessageRecord | null> {
+  const row = await get<MsgRow>(
+    "SELECT m.* FROM messages m JOIN inboxes i ON i.address = m.address WHERE m.address = ? AND i.owner_email = ? ORDER BY m.received_at DESC LIMIT 1",
+    [address.toLowerCase(), ownerEmail]
+  );
+  return row ? toRecord(row) : null;
+}
+
+// Drop every message in an inbox but keep the inbox itself (route rule intact).
+export async function clearInboxMessages(address: string, ownerEmail: string): Promise<number> {
+  const before = await get<{ n: number }>(
+    "SELECT COUNT(*) AS n FROM messages m JOIN inboxes i ON i.address = m.address WHERE m.address = ? AND i.owner_email = ?",
+    [address.toLowerCase(), ownerEmail]
+  );
+  await run(
+    "DELETE FROM messages WHERE address = ? AND EXISTS (SELECT 1 FROM inboxes i WHERE i.address = messages.address AND i.owner_email = ?)",
+    [address.toLowerCase(), ownerEmail]
+  );
+  return Number(before?.n) || 0;
+}
+
+export async function renameInbox(
+  id: string,
+  ownerEmail: string,
+  label: string | null,
+): Promise<boolean> {
+  const inbox = await getInbox(id, ownerEmail);
+  if (!inbox) return false;
+  await run("UPDATE inboxes SET label = ? WHERE id = ? AND owner_email = ?", [label, id, ownerEmail]);
+  return true;
+}
+
+// Per-inbox totals for a dashboard-style overview.
+export async function inboxStats(ownerEmail: string): Promise<{
+  inboxes: number; messages: number; unread: number; domains: Record<string, number>;
+}> {
+  const rows = await query<{ address: string; n: number; unread: number }>(
+    `SELECT i.address,
+            COUNT(m.id) AS n,
+            COALESCE(SUM(CASE WHEN m.seen = 0 THEN 1 ELSE 0 END), 0) AS unread
+       FROM inboxes i LEFT JOIN messages m ON m.address = i.address
+      WHERE i.owner_email = ? GROUP BY i.address`,
+    [ownerEmail]
+  );
+  const domains: Record<string, number> = {};
+  let messages = 0, unread = 0;
+  for (const r of rows) {
+    const d = r.address.split("@")[1] || "";
+    domains[d] = (domains[d] || 0) + 1;
+    messages += Number(r.n) || 0;
+    unread += Number(r.unread) || 0;
+  }
+  return { inboxes: rows.length, messages, unread, domains };
+}
+
 // --- attachments ---
 export type AttachmentMeta = {
   id: string;

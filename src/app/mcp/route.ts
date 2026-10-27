@@ -7,7 +7,9 @@ import {
   listInboxes, getInboxByAddress, getInbox, createInbox, deleteInbox,
   listMessages, findMessageById, listAttachments, deleteMessage,
   getAttachment, markSeen,
+  searchMessages, latestMessage, clearInboxMessages, renameInbox, inboxStats,
 } from "@/lib/mail-store";
+import { getCfDomains } from "@/lib/cloudflare";
 import type { MessageRecord } from "@/lib/mail-store";
 import { safeAttachmentFilename } from "@/lib/attachment-filename";
 
@@ -61,6 +63,75 @@ const baseTools = [
   },
 ];
 
+// Extra tools beyond the upstream set: search / stats / maintenance. All of them
+// are scoped to the API key's owner, same as the base tools.
+const extraTools = [
+  {
+    name: "search_messages",
+    description:
+      "Search the owner's mail by keyword across subject, sender and body. Optional id/address narrows it to one inbox.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        q: { type: "string" },
+        address: { type: "string" },
+        limit: { type: "number" },
+      },
+      required: ["q"],
+    },
+  },
+  {
+    name: "get_latest_message",
+    description: "Return the newest message in an inbox (null when empty). Handy for OTP polling.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" }, address: { type: "string" } },
+    },
+  },
+  {
+    name: "clear_inbox",
+    description: "Delete every message in an inbox but keep the address and its routing rule.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" } },
+      required: ["id"],
+    },
+  },
+  {
+    name: "rename_inbox",
+    description: "Set or clear an inbox label. Pass an empty string to clear it.",
+    inputSchema: {
+      type: "object",
+      properties: { id: { type: "string" }, label: { type: "string" } },
+      required: ["id"],
+    },
+  },
+  {
+    name: "inbox_stats",
+    description: "Totals across the account: inbox count, message count, unread count, and inboxes per domain.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "list_domains",
+    description: "List the domains AgentBox can receive mail for, and which one is the default.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "create_inbox_on_domain",
+    description:
+      "Create an inbox on a specific configured domain (create_inbox always uses the default domain).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        local: { type: "string" },
+        domain: { type: "string" },
+        label: { type: "string" },
+      },
+      required: ["domain"],
+    },
+  },
+];
+
 const attachmentTool = {
   name: "get_attachment",
   description: "Get attachment metadata and a download URL (fetch with your API key). Requires R2.",
@@ -78,6 +149,7 @@ async function callTool(origin: string, name: string, raw: Record<string, unknow
   const args = raw as {
     limit?: number; address?: string; local?: string; label?: string;
     id?: string; mid?: string; aid?: string; since?: number; wait?: number; ids?: unknown;
+    q?: string; domain?: string;
   };
   switch (name) {
     case "list_inboxes": {
@@ -156,6 +228,82 @@ async function callTool(origin: string, name: string, raw: Record<string, unknow
       if (!att) throw new Error("attachment not found");
       return text({ id: att.id, filename: safeAttachmentFilename(att.filename), contentType: att.content_type, size: att.size, url: `${origin}/v1/messages/${args.mid}/attachments/${args.aid}` });
     }
+    case "search_messages": {
+      const q = (args.q || "").trim();
+      if (!q) throw new Error("q required");
+      const limit = Math.min(Number(args.limit) || 50, 100);
+      const hits = await searchMessages(ownerEmail, q, args.address, limit);
+      return text({
+        query: q,
+        count: hits.length,
+        messages: hits.map((m) => ({
+          id: m.id, to: m.to, from: m.from, fromName: m.fromName ?? null,
+          subject: m.subject ?? null, preview: m.preview ?? null, receivedAt: m.receivedAt,
+        })),
+      });
+    }
+    case "get_latest_message": {
+      let addr = args.address;
+      if (!addr && args.id) {
+        const inbox = await getInbox(args.id, ownerEmail);
+        if (!inbox) throw new Error("unknown inbox");
+        addr = inbox.address;
+      }
+      if (!addr) throw new Error("id or address required");
+      const m = await latestMessage(addr, ownerEmail);
+      if (!m) return text({ address: addr, message: null });
+      return text({
+        address: addr,
+        message: {
+          id: m.id, from: m.from, fromName: m.fromName ?? null, to: m.to,
+          subject: m.subject ?? null, text: m.text ?? null, html: m.html ?? null,
+          receivedAt: m.receivedAt,
+        },
+      });
+    }
+    case "clear_inbox": {
+      if (!args.id) throw new Error("id required");
+      const inbox = await getInbox(args.id, ownerEmail);
+      if (!inbox) throw new Error("unknown inbox");
+      const removed = await clearInboxMessages(inbox.address, ownerEmail);
+      return text({ ok: true, id: args.id, removed });
+    }
+    case "rename_inbox": {
+      if (!args.id) throw new Error("id required");
+      const label = typeof args.label === "string" && args.label.trim() ? args.label.trim() : null;
+      const ok = await renameInbox(args.id, ownerEmail, label);
+      if (!ok) throw new Error("unknown inbox");
+      return text({ ok: true, id: args.id, label });
+    }
+    case "inbox_stats": {
+      return text(await inboxStats(ownerEmail));
+    }
+    case "list_domains": {
+      const cfg = await getCfConfig();
+      const list = await getCfDomains();
+      return text({
+        default: cfg?.domain ?? null,
+        domains: list.map((d) => d.domain),
+      });
+    }
+    case "create_inbox_on_domain": {
+      const cfg = await getCfConfig();
+      if (!cfg) throw new Error("not configured");
+      const list = await getCfDomains();
+      const want = (args.domain || "").trim().toLowerCase();
+      if (!list.some((d) => d.domain === want)) throw new Error(`domain not configured: ${want}`);
+      let local = (args.local || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "");
+      if (!local) local = randomLocal();
+      const address = `${local}@${want}`;
+      if (await getInboxByAddress(address, ownerEmail)) throw new Error("inbox already exists");
+      try {
+        const inbox = await createInbox(address, ownerEmail, args.label || null);
+        return text({ id: inbox.id, address: inbox.address });
+      } catch (e) {
+        const msg = (e as Error).message;
+        throw new Error(/limit|exceed|maximum|too many/i.test(msg) ? "rule_limit_reached" : msg);
+      }
+    }
     default:
       throw new Error(`unknown tool: ${name}`);
   }
@@ -185,7 +333,9 @@ export async function POST(req: Request) {
         return NextResponse.json(ok(rpc.id, {}));
       case "tools/list": {
         const r2 = (await getSetting("r2_enabled")) === "1";
-        return NextResponse.json(ok(rpc.id, { tools: r2 ? [...baseTools, attachmentTool] : baseTools }));
+        return NextResponse.json(
+          ok(rpc.id, { tools: r2 ? [...baseTools, ...extraTools, attachmentTool] : [...baseTools, ...extraTools] })
+        );
       }
       case "tools/call": {
         const name = rpc.params?.name as string;

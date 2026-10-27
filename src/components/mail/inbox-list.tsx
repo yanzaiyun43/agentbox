@@ -44,7 +44,7 @@ export function InboxList({
 
   function copy(addr: string) {
     navigator.clipboard.writeText(addr);
-    toast.success("Address copied");
+    toast.success("地址已复制");
   }
 
   async function handleCreate(kind: "random" | "named") {
@@ -67,34 +67,34 @@ export function InboxList({
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-sidebar">
       <div className="flex h-16 shrink-0 items-center justify-between gap-3 border-b px-4">
         <div className="min-w-0">
-          <h2 className="truncate text-sm font-bold uppercase tracking-wide">Inboxes</h2>
+          <h2 className="truncate text-sm font-bold uppercase tracking-wide">收件箱</h2>
           <p className="truncate text-xs font-medium text-muted-foreground">
-            {inboxes.length} active{totalUnread > 0 && <> · <span className="text-primary">{totalUnread} unread</span></>}
+            {inboxes.length} 个在用{totalUnread > 0 && <> · <span className="text-primary">{totalUnread} 未读</span></>}
           </p>
         </div>
         <Dialog open={open} onOpenChange={(o) => { if (!creating) { setOpen(o); if (o && !domain) setDomain(domains[0] || ""); } }}>
           <DialogTrigger asChild>
             <Button size="sm" disabled={!configured} className="shrink-0 rounded-lg font-bold shadow-md shadow-blue-500/10">
-              <Plus className="mr-1 h-4 w-4" /> New
+              <Plus className="mr-1 h-4 w-4" /> 新建
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Generate inbox</DialogTitle>
+              <DialogTitle>生成收件箱</DialogTitle>
               <DialogDescription>
-                Leave the address blank to auto-generate a random one.
+                地址留空则自动生成一个随机地址。
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label htmlFor="local">Address (optional)</Label>
+                <Label htmlFor="local">地址（可选）</Label>
                 <div className="flex items-center gap-1.5">
-                  <Input id="local" className="flex-1" placeholder="e.g. signup-bot" value={local} disabled={!!creating} onChange={(e) => setLocal(e.target.value)} />
+                  <Input id="local" className="flex-1" placeholder="例如 signup-bot" value={local} disabled={!!creating} onChange={(e) => setLocal(e.target.value)} />
                   {domains.length > 1 ? (
                     <>
                       <span className="text-sm text-muted-foreground">@</span>
                       <Select value={domain} onValueChange={setDomain} disabled={!!creating}>
-                        <SelectTrigger className="w-auto"><SelectValue placeholder="domain" /></SelectTrigger>
+                        <SelectTrigger className="w-auto"><SelectValue placeholder="域名" /></SelectTrigger>
                         <SelectContent>
                           {domains.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                         </SelectContent>
@@ -106,21 +106,21 @@ export function InboxList({
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="label">Label (optional)</Label>
-                <Input id="label" placeholder="e.g. GitHub signup agent" value={label} disabled={!!creating} onChange={(e) => setLabel(e.target.value)} />
+                <Label htmlFor="label">备注名（可选）</Label>
+                <Input id="label" placeholder="例如 GitHub 注册机器人" value={label} disabled={!!creating} onChange={(e) => setLabel(e.target.value)} />
               </div>
               {creating && (
-                <p className="text-xs text-muted-foreground">Creating the address &amp; registering its Cloudflare route…</p>
+                <p className="text-xs text-muted-foreground">正在创建地址并注册 Cloudflare 路由…</p>
               )}
             </div>
             <DialogFooter>
               <Button variant="ghost" disabled={!!creating} onClick={() => handleCreate("random")}>
                 {creating === "random" ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Sparkles className="mr-1 h-4 w-4" />}
-                Random
+                随机
               </Button>
               <Button disabled={!!creating} onClick={() => handleCreate("named")}>
                 {creating === "named" && <Loader2 className="mr-1 h-4 w-4 animate-spin" />}
-                Create
+                创建
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -130,7 +130,7 @@ export function InboxList({
       {!configured && (
         <div className="m-3 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-600 dark:text-amber-400">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>Not provisioned yet. Go to Settings to connect Cloudflare and deploy the email worker.</span>
+          <span>尚未初始化。请到「设置」连接 Cloudflare 并部署邮件 Worker。</span>
         </div>
       )}
 
@@ -141,7 +141,7 @@ export function InboxList({
           ) : inboxes.length === 0 ? (
             <div className="px-3 py-10 text-center text-sm text-muted-foreground">
               <InboxIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              No inboxes yet.
+              还没有收件箱。
             </div>
           ) : (
             inboxes.map((inbox, i) => {
@@ -185,17 +185,17 @@ export function InboxList({
                       role="button"
                       tabIndex={0}
                       onClick={(e) => e.stopPropagation()}
-                      className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+                      className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:opacity-100"
                     >
                       <MoreVertical className="h-4 w-4" />
                     </span>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); copy(inbox.address); }}>
-                      <Copy className="mr-2 h-4 w-4" /> Copy address
+                      <Copy className="mr-2 h-4 w-4" /> 复制地址
                     </DropdownMenuItem>
                     <DropdownMenuItem variant="destructive" onClick={(e) => { e.stopPropagation(); setDelTarget(inbox); setConfirmText(""); }}>
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      <Trash2 className="mr-2 h-4 w-4" /> 删除
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -211,21 +211,21 @@ export function InboxList({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" /> Delete inbox
+              <AlertTriangle className="h-5 w-5 text-destructive" /> 删除收件箱
             </DialogTitle>
             <DialogDescription>
-              This permanently deletes <span className="break-all font-mono text-foreground">{delTarget?.address}</span> and{" "}
-              <b>all of its messages</b>. New mail to this address will no longer be stored. This cannot be undone.
+              这会永久删除 <span className="break-all font-mono text-foreground">{delTarget?.address}</span> 以及{" "}
+              <b>它收到的全部邮件</b>。此后发往该地址的新邮件不再保存，且不可撤销。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <Label htmlFor="confirm-del">
-              Type <span className="font-mono font-semibold text-foreground">DELETE</span> to confirm
+              输入 <span className="font-mono font-semibold text-foreground">DELETE</span> 以确认
             </Label>
             <Input id="confirm-del" autoFocus value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" />
           </div>
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button variant="ghost" disabled={deleting} onClick={() => { setDelTarget(null); setConfirmText(""); }}>Cancel</Button>
+            <Button variant="ghost" disabled={deleting} onClick={() => { setDelTarget(null); setConfirmText(""); }}>取消</Button>
             <Button
               variant="destructive"
               disabled={confirmText !== "DELETE" || deleting}
@@ -237,7 +237,7 @@ export function InboxList({
               }}
             >
               {deleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Trash2 className="mr-1.5 h-4 w-4" />}
-              Delete inbox
+              删除收件箱
             </Button>
           </DialogFooter>
         </DialogContent>

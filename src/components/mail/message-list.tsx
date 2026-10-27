@@ -102,14 +102,14 @@ export function MessageList({
       {/* header */}
       {selectMode ? (
         <div className="flex h-16 shrink-0 items-center gap-2 overflow-hidden border-b px-3 sm:px-4">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={exitSelect} aria-label="Cancel">
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={exitSelect} aria-label="取消">
             <X className="h-4 w-4" />
           </Button>
           <span className="min-w-0 flex-1 truncate text-sm font-medium">{selected.size} selected</span>
-          <Button variant="ghost" size="icon" disabled={!selected.size || !!busy} onClick={doMarkRead} aria-label="Mark read">
+          <Button variant="ghost" size="icon" disabled={!selected.size || !!busy} onClick={doMarkRead} aria-label="标记已读">
             {busy === "read" ? <Loader2 className="h-4 w-4 animate-spin" /> : <MailCheck className="h-4 w-4" />}
           </Button>
-          <Button variant="ghost" size="icon" disabled={!selected.size || !!busy} onClick={requestBulkDelete} aria-label="Delete selected" className="text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="icon" disabled={!selected.size || !!busy} onClick={requestBulkDelete} aria-label="删除所选" className="text-muted-foreground hover:text-destructive">
             {busy === "delete" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </Button>
         </div>
@@ -117,25 +117,25 @@ export function MessageList({
         <div className="shrink-0 overflow-hidden border-b p-4">
           <button onClick={onBack} className="mb-3 flex max-w-full items-center gap-1.5 self-start rounded-lg border px-2.5 py-1 text-muted-foreground hover:bg-accent">
             <ChevronLeft className="h-4 w-4" />
-            <span className="text-xs font-bold uppercase">Inboxes</span>
+            <span className="text-xs font-bold uppercase">收件箱</span>
           </button>
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <span className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-slate-500">Messages</span>
+            <span className="min-w-0 truncate text-xs font-bold uppercase tracking-wider text-slate-500">邮件</span>
             <div className="flex shrink-0 items-center gap-1.5">
               {unread > 0 && (
                 <span className="mr-1 rounded-full bg-primary px-1.5 text-xs font-semibold leading-4 text-primary-foreground">{unread}</span>
               )}
-              <button disabled={!messages.length} onClick={() => setSelectMode(true)} aria-label="Select" className="rounded-lg border p-1.5 text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50">
+              <button disabled={!messages.length} onClick={() => setSelectMode(true)} aria-label="选择" className="rounded-lg border p-1.5 text-muted-foreground transition-colors hover:bg-accent disabled:opacity-50">
                 <CheckSquare className="h-3.5 w-3.5" />
               </button>
-              <button onClick={onRefresh} aria-label="Refresh" className="rounded-lg border p-1.5 text-muted-foreground transition-colors hover:bg-accent">
+              <button onClick={onRefresh} aria-label="刷新" className="rounded-lg border p-1.5 text-muted-foreground transition-colors hover:bg-accent">
                 <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
               </button>
             </div>
           </div>
           <div className="mt-2 flex min-w-0 items-center justify-between overflow-hidden rounded-md border bg-secondary p-2.5">
             <span className="select-all truncate font-mono text-xs text-muted-foreground">{inbox.address}</span>
-            <button onClick={() => { navigator.clipboard.writeText(inbox.address); toast.success("Copied"); }} className="ml-1.5 shrink-0 text-muted-foreground hover:text-foreground" aria-label="Copy address">
+            <button onClick={() => { navigator.clipboard.writeText(inbox.address); toast.success("已复制"); }} className="ml-1.5 shrink-0 text-muted-foreground hover:text-foreground" aria-label="复制地址">
               <Copy className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -158,8 +158,8 @@ export function MessageList({
         ) : messages.length === 0 ? (
           <div className="px-4 py-16 text-center text-sm text-muted-foreground">
             <MailOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            No messages yet.
-            <p className="mt-1 text-xs">Send an email to this address — it will appear here.</p>
+            还没有邮件。
+            <p className="mt-1 text-xs">往这个地址发封信，就会出现在这里。</p>
           </div>
         ) : (
           <div className="space-y-2.5 p-3">
@@ -189,7 +189,7 @@ export function MessageList({
                             {initials(m.from_name, m.from_addr)}
                           </div>
                           <div className="min-w-0 flex-1 overflow-hidden">
-                            <h4 className="truncate text-sm font-bold leading-tight">{m.from_name || m.from_addr || "Unknown"}</h4>
+                            <h4 className="truncate text-sm font-bold leading-tight">{m.from_name || m.from_addr || "未知"}</h4>
                             <p className="mt-0.5 truncate font-mono text-xs leading-none text-muted-foreground">{m.from_addr}</p>
                           </div>
                         </div>
@@ -207,7 +207,7 @@ export function MessageList({
                     <span
                       role="button"
                       tabIndex={0}
-                      aria-label="Delete message"
+                      aria-label="删除邮件"
                       onClick={(e) => { e.stopPropagation(); requestRowDelete(m.id); }}
                       className={cn(
                         "absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-background/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-destructive/10 hover:text-destructive",
@@ -231,16 +231,16 @@ export function MessageList({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Delete message{confirmTarget === "bulk" && selected.size > 1 ? "s" : ""}
+              {confirmTarget === "bulk" ? "删除所选邮件" : "删除邮件"}
             </DialogTitle>
             <DialogDescription>
               {confirmTarget === "bulk"
-                ? `Are you sure you want to permanently delete ${selected.size} selected message${selected.size > 1 ? "s" : ""}? This cannot be undone.`
-                : "Are you sure you want to permanently delete this message? This cannot be undone."}
+                ? `确定要永久删除选中的 ${selected.size} 封邮件吗？不可撤销。`
+                : "确定要永久删除这封邮件吗？不可撤销。"}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>取消</Button>
             <Button
               variant="destructive"
               onClick={() => {

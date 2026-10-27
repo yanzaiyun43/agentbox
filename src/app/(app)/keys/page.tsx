@@ -25,7 +25,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={() => {
         navigator.clipboard.writeText(text);
         setDone(true);
-        toast.success("Copied");
+        toast.success("已复制");
         setTimeout(() => setDone(false), 1200);
       }}
     >
@@ -100,11 +100,11 @@ function Endpoint({
       </div>
       <div className="space-y-3 p-3.5">
         <p className="text-xs leading-normal text-muted-foreground">{desc}</p>
-        {query && <ParamTable label="Query parameters" rows={query} />}
-        {body && <ParamTable label="Request body (JSON)" rows={body} />}
+        {query && <ParamTable label="查询参数" rows={query} />}
+        {body && <ParamTable label="请求体（JSON）" rows={body} />}
         {response && (
           <div>
-            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Response 200</p>
+            <p className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">响应 200</p>
             <pre className="overflow-x-auto rounded-lg border bg-secondary/40 p-2.5 font-mono text-xs leading-relaxed text-muted-foreground">{response}</pre>
           </div>
         )}
@@ -123,8 +123,8 @@ function ParamTable({ label, rows }: { label: string; rows: Param[] }) {
             <code className="font-mono font-semibold text-foreground">{p.name}</code>
             <span className="font-mono text-xs text-blue-500">{p.type}</span>
             {p.required
-              ? <span className="text-xs font-bold uppercase text-rose-500">required</span>
-              : <span className="text-xs font-bold uppercase text-slate-500">optional</span>}
+              ? <span className="text-xs font-bold uppercase text-rose-500">必填</span>
+              : <span className="text-xs font-bold uppercase text-slate-500">可选</span>}
             <span className="w-full text-muted-foreground sm:w-auto sm:flex-1">{p.desc}</span>
           </div>
         ))}
@@ -175,7 +175,7 @@ export default function KeysPage() {
     setRevoking(id);
     try {
       await fetch(`/api/keys/${id}`, { method: "DELETE" });
-      toast.success("Key revoked");
+      toast.success("密钥已吊销");
       load();
     } finally {
       setRevoking(null);
@@ -184,17 +184,17 @@ export default function KeysPage() {
 
   return (
     <>
-      <PageHeader title="API Keys" description="Bearer tokens for AI agents to access the /v1 API.">
+      <PageHeader title="API 密钥" description="给 AI 智能体访问 /v1 接口用的 Bearer 令牌。">
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setCreated(null); }}>
           <DialogTrigger asChild>
-            <Button size="sm"><Plus className="mr-1.5 h-4 w-4" /> New key</Button>
+            <Button size="sm"><Plus className="mr-1.5 h-4 w-4" /> 新建密钥</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{created ? "Key created" : "Create API key"}</DialogTitle>
+              <DialogTitle>{created ? "密钥已创建" : "创建 API 密钥"}</DialogTitle>
               <DialogDescription>
                 {created
-                  ? "Copy this key now — for security, it won't be shown again."
+                  ? "现在就复制走——出于安全，密钥不会再显示第二次。"
                   : "Generate a token for an AI agent to access inboxes via the /v1 API."}
               </DialogDescription>
             </DialogHeader>
@@ -205,16 +205,16 @@ export default function KeysPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                <Label htmlFor="kn">Name</Label>
-                <Input id="kn" placeholder="e.g. signup-agent" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+                <Label htmlFor="kn">名称</Label>
+                <Input id="kn" placeholder="例如 signup-agent" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
               </div>
             )}
             <DialogFooter>
               {created ? (
-                <Button onClick={() => { setOpen(false); setCreated(null); }}><Check className="mr-1.5 h-4 w-4" /> Done</Button>
+                <Button onClick={() => { setOpen(false); setCreated(null); }}><Check className="mr-1.5 h-4 w-4" /> 完成</Button>
               ) : (
                 <Button onClick={create} disabled={!name.trim() || creating}>
-                  {creating && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}Create key
+                  {creating && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}创建密钥
                 </Button>
               )}
             </DialogFooter>
@@ -227,8 +227,8 @@ export default function KeysPage() {
           {/* Active keys */}
           <Card className="rounded-lg">
             <CardHeader>
-              <CardTitle className="text-xs font-bold uppercase tracking-tight">Active keys</CardTitle>
-              <CardDescription className="text-xs">Use as <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-blue-500">Authorization: Bearer &lt;key&gt;</code></CardDescription>
+              <CardTitle className="text-xs font-bold uppercase tracking-tight">有效密钥</CardTitle>
+              <CardDescription className="text-xs">用法 <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs text-blue-500">Authorization: Bearer &lt;key&gt;</code></CardDescription>
             </CardHeader>
             <CardContent>
               {keys.length === 0 ? (
@@ -236,12 +236,12 @@ export default function KeysPage() {
                   <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-muted">
                     <KeyRound className="h-5 w-5 text-muted-foreground" />
                   </div>
-                  <p className="text-sm font-medium">No API keys yet</p>
+                  <p className="text-sm font-medium">还没有 API 密钥</p>
                   <p className="mb-4 mt-1 max-w-xs text-xs text-muted-foreground">
-                    Create a key so your AI agents can generate inboxes and read mail.
+                    创建一个密钥，你的 AI 智能体就能建收件箱、读邮件。
                   </p>
                   <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
-                    <Plus className="mr-1.5 h-4 w-4" /> Create your first key
+                    <Plus className="mr-1.5 h-4 w-4" /> 创建第一个密钥
                   </Button>
                 </div>
               ) : (
@@ -256,10 +256,10 @@ export default function KeysPage() {
                           <span className="truncate text-sm font-medium">{k.name}</span>
                           {k.last_used_at ? (
                             <Badge variant="outline" className="h-5 gap-1 border-emerald-500/30 bg-emerald-500/15 text-xs text-emerald-600 dark:text-emerald-400">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />active
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />活跃
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="h-5 border-amber-500/30 bg-amber-500/10 text-xs text-amber-600 dark:text-amber-400">unused</Badge>
+                            <Badge variant="outline" className="h-5 border-amber-500/30 bg-amber-500/10 text-xs text-amber-600 dark:text-amber-400">未使用</Badge>
                           )}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -267,8 +267,8 @@ export default function KeysPage() {
                           <span>·</span>
                           <span>
                             {k.last_used_at
-                              ? `last used ${new Date(k.last_used_at).toLocaleDateString()}`
-                              : `created ${new Date(k.created_at).toLocaleDateString()}`}
+                              ? `最后使用 ${new Date(k.last_used_at).toLocaleDateString("zh-CN")}`
+                              : `创建于 ${new Date(k.created_at).toLocaleDateString("zh-CN")}`}
                           </span>
                         </div>
                       </div>
@@ -287,21 +287,21 @@ export default function KeysPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Terminal className="h-4 w-4 text-blue-500" />
-                <CardTitle className="text-xs font-bold uppercase tracking-tight">Agent API reference</CardTitle>
+                <CardTitle className="text-xs font-bold uppercase tracking-tight">智能体 API 参考</CardTitle>
               </div>
               <CardDescription className="text-xs">
                 Base URL <code className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-500">{base}/v1</code>{" "}
                 · every request needs <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code>{" "}
-                · all timestamps are epoch ms.
+                · 所有时间戳均为 epoch 毫秒。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Endpoint
                 method="GET" path="/v1/inboxes"
-                desc="List inboxes, newest first."
+                desc="列出收件箱，按时间倒序。"
                 query={[
-                  { name: "limit", type: "number", desc: "Max rows. Default 50, max 100." },
-                  { name: "address", type: "string", desc: "Exact-match filter for one address." },
+                  { name: "limit", type: "number", desc: "返回条数上限，默认 50，最大 100。" },
+                  { name: "address", type: "string", desc: "按地址精确匹配筛选。" },
                 ]}
                 response={`{
   "inboxes": [
@@ -315,8 +315,8 @@ export default function KeysPage() {
                 method="POST" path="/v1/inboxes"
                 desc={`Create an inbox. With an empty body you get a random address (e.g. swift-fox-9a@${domain}). Pass "local" to choose the part before the @.`}
                 body={[
-                  { name: "local", type: "string", desc: "Local-part of the address. Sanitised to [a-z0-9._-]. Omit for a random name." },
-                  { name: "label", type: "string", desc: "Optional human label stored with the inbox." },
+                  { name: "local", type: "string", desc: "@ 前面的地址段，会被规范化为 [a-z0-9._-]。留空则随机。" },
+                  { name: "label", type: "string", desc: "可选备注名，存在收件箱上。" },
                 ]}
                 response={`{ "id": "inbox_ab12cd34",
   "address": "support-bot@${domain}" }
@@ -326,18 +326,18 @@ export default function KeysPage() {
               />
               <Endpoint
                 method="DELETE" path="/v1/inboxes/{id}"
-                desc="Release an inbox: removes its routing rule (frees one of the 200 per-domain slots) and deletes its stored messages. Idempotent."
+                desc="释放收件箱：删除它的路由规则（腾出单域 200 条中的一个名额），并清空已存邮件。幂等。"
                 response={`{ "ok": true, "id": "inbox_ab12cd34" }
 
 // 404 { "error": "unknown inbox" }`}
               />
               <Endpoint
                 method="GET" path="/v1/inboxes/{id}/messages"
-                desc="List messages for an inbox, newest first. Use wait to long-poll until mail arrives — ideal right after triggering a signup/OTP email."
+                desc="列出该收件箱的邮件，按时间倒序。用 wait 长轮询等新邮件到达——刚触发注册/验证码邮件时最有用。"
                 query={[
-                  { name: "wait", type: "number", desc: "Seconds to long-poll for new mail (max 55). Returns early once any message matches. Default 0 = return immediately." },
-                  { name: "since", type: "number", desc: "Only messages received after this epoch-ms timestamp." },
-                  { name: "limit", type: "number", desc: "Max messages returned. Default 100, max 100." },
+                  { name: "wait", type: "number", desc: "长轮询等待新邮件的秒数（最大 55）。一旦有邮件命中就提前返回。默认 0 = 立即返回。" },
+                  { name: "since", type: "number", desc: "只返回在此 epoch 毫秒之后收到的邮件。" },
+                  { name: "limit", type: "number", desc: "返回邮件数上限，默认 100，最大 100。" },
                 ]}
                 response={`{
   "id": "inbox_ab12cd34",
@@ -354,7 +354,7 @@ export default function KeysPage() {
               />
               <Endpoint
                 method="GET" path="/v1/messages/{id}"
-                desc="Fetch one full message, including the HTML body (the list endpoint omits html for brevity)."
+                desc="取一封邮件的完整内容，含 HTML 正文（列表接口为省流量不返回 html）。"
                 response={`{
   "message": { "id": "msg_77f0",
     "from": "no-reply@stripe.com", "fromName": "Stripe",
@@ -367,21 +367,21 @@ export default function KeysPage() {
               />
               <Endpoint
                 method="POST" path="/v1/messages/seen"
-                desc="Mark one or more messages as read."
+                desc="把一封或多封邮件标记为已读。"
                 body={[
-                  { name: "ids", type: "string[]", required: true, desc: "Message ids to mark as seen." },
+                  { name: "ids", type: "string[]", required: true, desc: "要标记为已读的邮件 id。" },
                 ]}
                 response={`{ "ok": true, "count": 1 }`}
               />
               <Endpoint
                 method="DELETE" path="/v1/messages/{id}"
-                desc="Delete one stored message. Idempotent."
+                desc="删除一封已存邮件。幂等。"
                 response={`{ "ok": true, "id": "msg_77f0" }`}
               />
               <Endpoint
                 method="GET" path="/v1/messages/{id}/attachments/{aid}"
-                desc="Stream an attachment binary from R2 (requires R2 enabled). Returns the raw bytes with Content-Disposition, not JSON. Use the attachment id from the message's attachments array."
-                response={`<binary> — Content-Type & filename from the stored attachment`}
+                desc="从 R2 流式下载附件（需启用 R2）。返回带 Content-Disposition 的原始字节而非 JSON。附件 id 取自邮件的 attachments 数组。"
+                response={`<二进制> — Content-Type 与文件名取自已存附件`}
               />
             </CardContent>
           </Card>
@@ -391,31 +391,31 @@ export default function KeysPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-blue-500" />
-                <CardTitle className="text-xs font-bold uppercase tracking-tight">Quickstart</CardTitle>
+                <CardTitle className="text-xs font-bold uppercase tracking-tight">快速上手</CardTitle>
               </div>
-              <CardDescription>Copy-paste flow: create an inbox, long-poll for the email, read it, then release it.</CardDescription>
+              <CardDescription>可直接复制的流程：建收件箱 → 长轮询等信 → 读正文 → 释放收件箱。</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Step
                 n={1}
-                title="Create an inbox"
+                title="创建收件箱"
                 cmd={`curl -X POST ${base}/v1/inboxes \\\n  -H "Authorization: Bearer ab_..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"label":"signup"}'`}
                 result={`{ "id": "inbox_abc123", "address": "swift-fox-ab12@${domain}" }`}
               />
               <Step
                 n={2}
-                title="Long-poll for the email (waits up to 30s)"
+                title="长轮询等信（最多等 30 秒）"
                 cmd={`curl "${base}/v1/inboxes/inbox_abc123/messages?wait=30" \\\n  -H "Authorization: Bearer ab_..."`}
                 result={`{ "count": 1, "messages": [ { "id": "msg_77f0", "subject": "Your code is 123456", ... } ] }`}
               />
               <Step
                 n={3}
-                title="Read the full message (with HTML)"
+                title="读完整邮件（含 HTML）"
                 cmd={`curl ${base}/v1/messages/msg_77f0 \\\n  -H "Authorization: Bearer ab_..."`}
               />
               <Step
                 n={4}
-                title="Release the inbox when done"
+                title="用完释放收件箱"
                 cmd={`curl -X DELETE ${base}/v1/inboxes/inbox_abc123 \\\n  -H "Authorization: Bearer ab_..."`}
                 result={`{ "ok": true, "id": "inbox_abc123" }`}
               />
@@ -427,40 +427,40 @@ export default function KeysPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Plug className="h-4 w-4 text-blue-500" />
-                <CardTitle className="text-xs font-bold uppercase tracking-tight">MCP server</CardTitle>
+                <CardTitle className="text-xs font-bold uppercase tracking-tight">MCP 服务</CardTitle>
               </div>
               <CardDescription className="text-xs">
                 Streamable-HTTP endpoint <code className="rounded bg-blue-500/10 px-1.5 py-0.5 font-mono text-xs text-blue-500">{base}/mcp</code>{" "}
                 · same <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-xs">Authorization: Bearer &lt;key&gt;</code> auth{" "}
-                · exposes the same operations as the /v1 API as MCP tools.
+                · 把 /v1 的全部操作以 MCP 工具形式暴露出来。
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">Tools</p>
+                <p className="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500">工具</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["list_inboxes", "create_inbox", "delete_inbox", "list_messages", "get_message", "delete_message", "mark_seen", "get_attachment"].map((t) => (
+                  {["list_inboxes", "create_inbox", "create_inbox_on_domain", "delete_inbox", "rename_inbox", "clear_inbox", "list_messages", "get_message", "get_latest_message", "search_messages", "delete_message", "mark_seen", "inbox_stats", "list_domains", "get_attachment"].map((t) => (
                     <code key={t} className="rounded border bg-secondary/40 px-1.5 py-0.5 font-mono text-xs">{t}</code>
                   ))}
                 </div>
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  <code className="font-mono">get_attachment</code> is only listed when R2 attachment storage is enabled.
+                  <code className="font-mono">get_attachment</code> 仅在启用 R2 附件存储时才会出现在列表里。
                 </p>
               </div>
               <Step
                 n={1}
-                title="Add to an MCP client (Claude Code, Cursor, etc.)"
+                title="加入 MCP 客户端（Claude Code、Cursor 等）"
                 cmd={`{\n  "mcpServers": {\n    "agentbox": {\n      "url": "${base}/mcp",\n      "headers": { "Authorization": "Bearer ab_..." }\n    }\n  }\n}`}
               />
               <Step
                 n={2}
-                title="Or call it directly over JSON-RPC"
+                title="或直接用 JSON-RPC 调用"
                 cmd={`curl -X POST ${base}/mcp \\\n  -H "Authorization: Bearer ab_..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'`}
                 result={`{ "result": { "tools": [ { "name": "list_inboxes", ... } ] } }`}
               />
               <Step
                 n={3}
-                title="Invoke a tool"
+                title="调用工具"
                 cmd={`curl -X POST ${base}/mcp \\\n  -H "Authorization: Bearer ab_..." \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
        "params":{"name":"create_inbox","arguments":{"label":"signup"}}}'`}
                 result={`{ "result": { "content": [ { "type": "text",

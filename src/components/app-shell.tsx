@@ -84,34 +84,34 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
             <Logo size={40} className="h-10 w-10 shrink-0 rounded-lg bg-[#0066ff] shadow-lg shadow-blue-500/20" />
             <div>
               <span className="text-base font-extrabold tracking-tight text-foreground">AgentBox</span>
-              <p className="mt-0.5 text-xs font-medium leading-none text-slate-500">Email Inbox for AI agents</p>
+              <p className="mt-0.5 text-xs font-medium leading-none text-slate-500">面向 AI 智能体的邮箱</p>
             </div>
           </div>
-          <button className="rounded-lg border border-sidebar-border p-1.5 text-muted-foreground hover:bg-accent lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu">
+          <button className="rounded-lg border border-sidebar-border p-1.5 text-muted-foreground hover:bg-accent lg:hidden" onClick={() => setOpen(false)} aria-label="关闭菜单">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* MAIL */}
         <nav className="space-y-1.5 px-4 py-2">
-          <span className="mb-2 block px-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">Mail</span>
-          <NavItem href="/" label="Inboxes" icon={Inbox} active={pathname === "/"}
+          <span className="mb-2 block px-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">邮件</span>
+          <NavItem href="/" label="收件箱" icon={Inbox} active={pathname === "/"}
             badge={unreadCount > 0 ? <span className="rounded-full bg-[#ff4e20] px-1.5 py-0.5 text-xs font-bold text-white shadow-sm">{unreadCount}</span> : null} />
         </nav>
 
         {/* CONFIGURATION */}
         <nav className="space-y-1.5 px-4 py-2">
-          <span className="mb-2 block px-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">Configuration</span>
-          <NavItem href="/keys" label="API Keys" icon={KeyRound} active={pathname.startsWith("/keys")}
+          <span className="mb-2 block px-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">配置</span>
+          <NavItem href="/keys" label="API 密钥" icon={KeyRound} active={pathname.startsWith("/keys")}
             badge={keyCount > 0 ? <span className="rounded-full bg-secondary px-1.5 py-0.5 text-xs font-bold text-muted-foreground">{keyCount}</span> : null} />
-          <NavItem href="/settings" label="Settings" icon={Settings} active={pathname.startsWith("/settings")}
+          <NavItem href="/settings" label="设置" icon={Settings} active={pathname.startsWith("/settings")}
             badge={!configured ? <span className="h-2 w-2 rounded-full bg-amber-500 shadow-sm" /> : null} />
         </nav>
 
         {/* DOMAINS */}
         <div className="px-4 py-6">
           <div className="mb-2 flex items-center justify-between px-3 text-xs font-extrabold uppercase tracking-wider text-slate-500">
-            <span>Domains</span>
+            <span>域名</span>
             <Link href="/settings" className="rounded p-0.5 text-blue-400 hover:bg-accent"><Plus className="h-3.5 w-3.5" /></Link>
           </div>
           <div className="space-y-1">
@@ -123,10 +123,10 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
               )}
             >
               <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-500" />
-              <span className="truncate">All domains</span>
+              <span className="truncate">全部域名</span>
             </button>
             {domains.length === 0 ? (
-              <span className="block px-3 py-1 text-xs text-slate-500">No domains yet</span>
+              <span className="block px-3 py-1 text-xs text-slate-500">暂无域名</span>
             ) : domains.map((dom, i) => (
               <button
                 key={dom}
@@ -154,7 +154,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
               theme === "light" ? "border border-slate-200 bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
             )}
           >
-            <Sun className="h-3.5 w-3.5" /> Light
+            <Sun className="h-3.5 w-3.5" /> 浅色
           </button>
           <button
             onClick={() => setTheme("dark")}
@@ -163,7 +163,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
               theme === "dark" ? "border border-slate-800 bg-[#1a1d26] text-white shadow-sm" : "text-slate-500 hover:text-slate-300"
             )}
           >
-            <Moon className="h-3.5 w-3.5" /> Dark
+            <Moon className="h-3.5 w-3.5" /> 深色
           </button>
         </div>
 
@@ -180,7 +180,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
           <button
             onClick={() => setLogoutOpen(true)}
             className="shrink-0 rounded-md p-2 text-slate-400 transition-colors hover:bg-accent hover:text-rose-500"
-            title="Sign out"
+            title="退出登录"
           >
             <LogOut className="h-[18px] w-[18px]" />
           </button>
@@ -199,11 +199,11 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
               <AlertTriangle className="h-5 w-5 text-destructive" />
               Sign out
             </DialogTitle>
-            <DialogDescription>Are you sure you want to sign out of AgentBox?</DialogDescription>
+            <DialogDescription>确定要退出 AgentBox 吗？</DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button variant="outline" onClick={() => setLogoutOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={doLogout}>Sign out</Button>
+            <Button variant="outline" onClick={() => setLogoutOpen(false)}>取消</Button>
+            <Button variant="destructive" onClick={doLogout}>退出登录</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -213,7 +213,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
         {/* Mobile top bar */}
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4 lg:hidden">
           <div className="flex items-center gap-3">
-            <button className="rounded-lg border border-border p-2 hover:bg-accent" onClick={() => setOpen(true)} aria-label="Open menu">
+            <button className="rounded-lg border border-border p-2 hover:bg-accent" onClick={() => setOpen(true)} aria-label="打开菜单">
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export function AppShell({ children, email }: { children: React.ReactNode; email
           <button
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="rounded-lg border border-border p-2 hover:bg-accent"
-            aria-label="Toggle theme"
+            aria-label="切换主题"
           >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>

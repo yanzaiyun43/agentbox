@@ -104,10 +104,10 @@ export function MailClient() {
     });
     const d = await res.json();
     if (!res.ok) {
-      toast.error(d.error || "Failed");
+      toast.error(d.error || "操作失败");
       return;
     }
-    toast.success(`Created ${d.inbox.address}`);
+    toast.success(`已创建 ${d.inbox.address}`);
     await loadInboxes();
     setActiveInbox(d.inbox);
     setPane("messages");
@@ -115,7 +115,7 @@ export function MailClient() {
 
   async function deleteInbox(inbox: Inbox) {
     await fetch(`/api/inboxes/${inbox.id}`, { method: "DELETE" });
-    toast.success("Inbox deleted");
+    toast.success("收件箱已删除");
     if (activeInbox?.id === inbox.id) {
       setActiveInbox(null);
       setPane("inboxes");
@@ -150,7 +150,7 @@ export function MailClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids }),
     });
-    toast.success(`Deleted ${ids.length} message${ids.length > 1 ? "s" : ""}`);
+    toast.success(`已删除 ${ids.length} 封邮件`);
     if (activeMsg && ids.includes(activeMsg)) {
       setActiveMsg(null);
       setPane("messages");
@@ -234,7 +234,7 @@ export function MailClient() {
         ) : (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
             <Mail className="h-12 w-12 opacity-20" />
-            <p className="text-sm">{inboxOpen ? "Select a message to read" : "Select an inbox to view its messages"}</p>
+            <p className="text-sm">{inboxOpen ? "选择一封邮件阅读" : "选择左侧收件箱查看邮件"}</p>
           </div>
         )}
       </div>

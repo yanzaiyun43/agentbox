@@ -43,7 +43,7 @@ export function MessageView({ messageId, onDeleted, onBack }: { messageId: strin
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground">
         <Mail className="mb-3 h-12 w-12 opacity-20" />
-        <p className="text-sm">Select a message to read</p>
+        <p className="text-sm">选择一封邮件阅读</p>
       </div>
     );
   }
@@ -68,9 +68,9 @@ export function MessageView({ messageId, onDeleted, onBack }: { messageId: strin
         <div className="min-w-0 flex items-center gap-2">
           <button onClick={onBack} className="mr-1 flex shrink-0 items-center gap-1 rounded-lg border px-2.5 py-1 text-muted-foreground hover:bg-accent lg:hidden">
             <ChevronLeft className="h-4 w-4" />
-            <span className="text-xs font-bold">Back</span>
+            <span className="text-xs font-bold">返回</span>
           </button>
-          <span className="hidden truncate text-xs font-bold uppercase tracking-wider text-muted-foreground lg:block">Message Viewer</span>
+          <span className="hidden truncate text-xs font-bold uppercase tracking-wider text-muted-foreground lg:block">邮件内容</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {hasBoth && (
@@ -78,14 +78,14 @@ export function MessageView({ messageId, onDeleted, onBack }: { messageId: strin
               <button
                 onClick={() => setView("text")}
                 className={cn("rounded-md px-3 py-1 text-xs font-bold transition-all", view === "text" ? "border border-blue-500/20 bg-blue-600/10 text-blue-500" : "text-muted-foreground hover:text-foreground")}
-              >Text</button>
+              >纯文本</button>
               <button
                 onClick={() => setView("html")}
                 className={cn("rounded-md px-3 py-1 text-xs font-bold transition-all", view === "html" ? "border border-blue-500/20 bg-blue-600/10 text-blue-500" : "text-muted-foreground hover:text-foreground")}
               >HTML</button>
             </div>
           )}
-          <button onClick={del} disabled={deleting} aria-label="Delete" className="rounded-lg border p-1.5 text-muted-foreground transition-all hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500">
+          <button onClick={del} disabled={deleting} aria-label="删除" className="rounded-lg border p-1.5 text-muted-foreground transition-all hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-500">
             {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
           </button>
         </div>
@@ -116,7 +116,7 @@ export function MessageView({ messageId, onDeleted, onBack }: { messageId: strin
           {view === "html" && msg.html_body ? (
             <div className="rounded-lg border bg-secondary p-1">
               <iframe
-                title="message"
+                title="邮件"
                 sandbox=""
                 className="min-h-[50vh] w-full rounded-md border-0 bg-white"
                 srcDoc={msg.html_body}

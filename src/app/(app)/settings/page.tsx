@@ -37,14 +37,14 @@ type Step = { step: string; ok: boolean; detail?: string };
 // Retention presets. `seconds: -1` marks the "custom" entry, which reads the
 // number + unit inputs instead of a fixed value. 0 disables cleanup entirely.
 const RETENTION_PRESETS: { key: string; label: string; seconds: number }[] = [
-  { key: "off", label: "Keep forever", seconds: 0 },
-  { key: "3m", label: "3 minutes", seconds: 180 },
-  { key: "30m", label: "30 minutes", seconds: 1800 },
-  { key: "1h", label: "1 hour", seconds: 3600 },
-  { key: "1d", label: "1 day", seconds: 86400 },
-  { key: "1w", label: "1 week", seconds: 604800 },
-  { key: "1mo", label: "1 month", seconds: 2592000 },
-  { key: "custom", label: "Custom…", seconds: -1 },
+  { key: "off", label: "永久保留", seconds: 0 },
+  { key: "3m", label: "3 分钟", seconds: 180 },
+  { key: "30m", label: "30 分钟", seconds: 1800 },
+  { key: "1h", label: "1 小时", seconds: 3600 },
+  { key: "1d", label: "1 天", seconds: 86400 },
+  { key: "1w", label: "1 周", seconds: 604800 },
+  { key: "1mo", label: "1 个月", seconds: 2592000 },
+  { key: "custom", label: "自定义…", seconds: -1 },
 ];
 
 export default function SettingsPage() {
@@ -121,8 +121,8 @@ export default function SettingsPage() {
     });
     setSaving(false);
     const d = await res.json();
-    if (!res.ok) return toast.error(d.error || "Failed");
-    toast.success(`Added ${pickDomain}`);
+    if (!res.ok) return toast.error(d.error || "操作失败");
+    toast.success(`已添加 ${pickDomain}`);
     setPickDomain("");
     load();
   }
@@ -141,8 +141,8 @@ export default function SettingsPage() {
         body: JSON.stringify({ domain }),
       });
       const d = await res.json();
-      if (!res.ok) return toast.error(d.error || "Failed");
-      toast.success(`${domain} is now the default`);
+      if (!res.ok) return toast.error(d.error || "操作失败");
+      toast.success(`${domain} 已设为默认`);
       load();
     } finally {
       setSettingPrimary(null);
@@ -156,8 +156,8 @@ export default function SettingsPage() {
     setRemoveDomainOpen(false);
     const res = await fetch(`/api/settings/domains?domain=${encodeURIComponent(domain)}`, { method: "DELETE" });
     const d = await res.json();
-    if (!res.ok) return toast.error(d.error || "Failed");
-    toast.success(`Removed ${domain}`);
+    if (!res.ok) return toast.error(d.error || "操作失败");
+    toast.success(`已移除 ${domain}`);
     load();
   }
 
@@ -168,8 +168,8 @@ export default function SettingsPage() {
     const d = await res.json();
     setProvisioning(false);
     setSteps(d.steps || []);
-    if (d.ok) toast.success("Provisioned! Email Routing is live.");
-    else toast.error(d.error || "Provisioning failed");
+    if (d.ok) toast.success("初始化完成，邮件路由已生效。");
+    else toast.error(d.error || "初始化失败");
     load();
   }
 
@@ -178,7 +178,7 @@ export default function SettingsPage() {
     if (retentionPick === "custom") {
       const n = Number(retentionCustomValue);
       const mult = retentionCustomUnit === "days" ? 86400 : retentionCustomUnit === "hours" ? 3600 : 60;
-      if (!Number.isFinite(n) || n <= 0) return toast.error("Enter a positive number");
+      if (!Number.isFinite(n) || n <= 0) return toast.error("请输入一个正数");
       seconds = Math.round(n * mult);
     } else {
       const hit = RETENTION_PRESETS.find((p) => p.key === retentionPick);
@@ -192,9 +192,9 @@ export default function SettingsPage() {
     });
     const d = await res.json();
     setSavingRetention(false);
-    if (!res.ok) return toast.error(d.error || "Failed");
-    if (d.cronWarning) toast.warning(`Saved, but the cleanup cron could not be installed: ${d.cronWarning}`);
-    else toast.success(seconds > 0 ? "Retention policy saved" : "Cleanup disabled");
+    if (!res.ok) return toast.error(d.error || "操作失败");
+    if (d.cronWarning) toast.warning(`已保存，但清理用的定时任务装不上：${d.cronWarning}`);
+    else toast.success(seconds > 0 ? "保留策略已保存" : "已关闭自动清理");
     load();
   }
 
@@ -209,18 +209,18 @@ export default function SettingsPage() {
     setSteps(d.steps || []);
     if (d.ok) {
       // KV (incl. users) wiped + session destroyed server-side → back to setup.
-      toast.success("Cleaned up. Signing out…");
+      toast.success("已清空，正在退出登录…");
       router.push("/login");
       router.refresh();
       return;
     }
-    toast.error(d.error || "Cleanup failed");
+    toast.error(d.error || "清空失败");
     load();
   }
 
   return (
     <>
-      <PageHeader title="Settings" description="Connect Cloudflare and provision your email infrastructure." />
+      <PageHeader title="设置" description="连接 Cloudflare，把邮件基础设施铺好。" />
       <div className="flex-1 overflow-y-auto">
        <div className="w-full space-y-6 p-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
         <Card className="rounded-lg">
@@ -229,7 +229,7 @@ export default function SettingsPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-orange-500/25 bg-orange-500/10 text-orange-400">
                 <Cloud className="h-[22px] w-[22px]" />
               </div>
-              <CardTitle className="text-xs font-bold uppercase tracking-tight">Cloudflare Connection</CardTitle>
+              <CardTitle className="text-xs font-bold uppercase tracking-tight">Cloudflare 连接</CardTitle>
               {s?.configured && (
                 <Badge className="ml-auto gap-1.5 border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" variant="outline">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Connected
@@ -237,10 +237,10 @@ export default function SettingsPage() {
               )}
             </div>
             <CardDescription>
-              The API token is read from the <code className="rounded bg-muted px-1 py-0.5 text-xs">CF_API_TOKEN</code> environment
-              variable. Pick one or more domains (zones already in this account) to route mail for — inboxes can use any of them.{" "}
+              API 令牌从环境变量 <code className="rounded bg-muted px-1 py-0.5 text-xs">CF_API_TOKEN</code> 读取。
+              挑一个或多个域名（本账户下已接入的 zone）来收信 —— 收件箱可以挂在任意一个上。{" "}
               <a className="inline-flex items-center gap-0.5 underline" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noreferrer">
-                Manage tokens <ExternalLink className="h-3 w-3" />
+                管理令牌 <ExternalLink className="h-3 w-3" />
               </a>
             </CardDescription>
           </CardHeader>
@@ -248,13 +248,13 @@ export default function SettingsPage() {
             {!s?.hasToken && (
               <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
                 <AlertTriangle className="mt-0.5 h-4 w-4 text-warning" />
-                <span><code className="font-mono">CF_API_TOKEN</code> is not set on the server. Add it to your environment and redeploy.</span>
+                <span>服务器上没有设置 <code className="font-mono">CF_API_TOKEN</code>。请加进环境变量后重新部署。</span>
               </div>
             )}
             {/* Domains added so far. The first one is the primary (provisioning target). */}
             {(s?.domains?.length ?? 0) > 0 && (
               <div className="space-y-2">
-                <Label>Active domains</Label>
+                <Label>已接入域名</Label>
                 <div className="space-y-1.5">
                   {s!.domains.map((d, i) => (
                     <div key={d.domain} style={{ animationDelay: `${i * 40}ms` }} className="flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm animate-in fade-in slide-in-from-left-2 duration-300 fill-mode-both">
@@ -262,16 +262,16 @@ export default function SettingsPage() {
                       <span className="font-mono">{d.domain}</span>
                       {d.domain === s!.domain && (
                         <Badge variant="outline" className="ml-1 gap-1 text-xs">
-                          <Star className="h-3 w-3 fill-current" /> default
+                          <Star className="h-3 w-3 fill-current" /> 默认
                         </Badge>
                       )}
                       <span className="ml-auto font-mono text-xs text-muted-foreground">{d.zoneId.slice(0, 8)}…</span>
                       {d.domain !== s!.domain && (
                         <>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Make default" disabled={!!settingPrimary} onClick={() => setPrimary(d.domain)}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="设为默认" disabled={!!settingPrimary} onClick={() => setPrimary(d.domain)}>
                             {settingPrimary === d.domain ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Star className="h-3.5 w-3.5" />}
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6" title="Remove domain" disabled={!!settingPrimary} onClick={() => requestRemoveDomain(d.domain)}>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" title="移除域名" disabled={!!settingPrimary} onClick={() => requestRemoveDomain(d.domain)}>
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </>
@@ -285,15 +285,15 @@ export default function SettingsPage() {
             {/* Add a domain: auto-fetched zone selectbox. */}
             <form onSubmit={addDomain} className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="domain">Add a domain</Label>
+                <Label htmlFor="domain">添加域名</Label>
                 <Button type="button" variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" disabled={!s?.hasToken || zonesLoading} onClick={() => loadZones()}>
-                  <RefreshCw className={zonesLoading ? "h-3 w-3 animate-spin" : "h-3 w-3"} /> Refresh
+                  <RefreshCw className={zonesLoading ? "h-3 w-3 animate-spin" : "h-3 w-3"} /> 刷新
                 </Button>
               </div>
               <div className="flex gap-2">
                 <Select value={pickDomain} onValueChange={setPickDomain} disabled={!s?.hasToken || zonesLoading}>
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder={zonesLoading ? "Loading zones…" : "Select a Cloudflare domain"} />
+                    <SelectValue placeholder={zonesLoading ? "正在加载域名…" : "选择一个 Cloudflare 域名"} />
                   </SelectTrigger>
                   <SelectContent>
                     {zones
@@ -302,7 +302,7 @@ export default function SettingsPage() {
                         <SelectItem key={z.zoneId} value={z.domain}>{z.domain}</SelectItem>
                       ))}
                     {zones.filter((z) => !s?.domains?.some((d) => d.domain === z.domain)).length === 0 && (
-                      <div className="px-2 py-3 text-center text-xs text-muted-foreground">No eligible zones available</div>
+                      <div className="px-2 py-3 text-center text-xs text-muted-foreground">没有可添加的域名</div>
                     )}
                   </SelectContent>
                 </Select>
@@ -313,11 +313,11 @@ export default function SettingsPage() {
               <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  All zones on the account are listed. If a domain doesn&apos;t receive mail after provisioning, enable{" "}
-                  <span className="font-medium">Email Routing</span> for it manually in{" "}
+                  这里列出账户下所有 zone。如果某个域名在初始化后收不到信，请手动为它开启{" "}
+                  <span className="font-medium">邮件路由（Email Routing）</span>：{" "}
                   <a className="inline-flex items-center gap-0.5 underline" href="https://dash.cloudflare.com/?to=/:account/:zone/email/routing" target="_blank" rel="noreferrer">
                     Cloudflare → Email → Email Routing <ExternalLink className="h-3 w-3" />
-                  </a>, then Refresh.
+                  </a>，然后点刷新。
                 </span>
               </div>
             </form>
@@ -330,7 +330,7 @@ export default function SettingsPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-500/25 bg-blue-500/10 text-blue-400">
                 <Rocket className="h-[22px] w-[22px]" />
               </div>
-              <CardTitle className="text-xs font-bold uppercase tracking-tight">Provisioning</CardTitle>
+              <CardTitle className="text-xs font-bold uppercase tracking-tight">资源初始化</CardTitle>
               {s?.provisioned && (
                 <>
                   <Badge className="ml-auto gap-1.5 border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" variant="outline">
@@ -338,59 +338,58 @@ export default function SettingsPage() {
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
                       <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     </span>
-                    Live
+                    运行中
                   </Badge>
                   <Badge className={`gap-1.5 ${s.r2Enabled ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "border-amber-500/30 bg-amber-500/15 text-amber-600 dark:text-amber-400"}`} variant="outline">
                     <Paperclip className="h-3 w-3" />
-                    {s.r2Enabled ? "Attachments" : "No attachments"}
+                    {s.r2Enabled ? "附件已启用" : "附件未启用"}
                   </Badge>
                 </>
               )}
             </div>
             <CardDescription>
-              One click: create a D1 database and deploy the email worker. Email Routing must be{" "}
-              <span className="font-medium">enabled manually</span> per domain in the Cloudflare dashboard first (see above).
-              Once enabled, each inbox you create gets its own routing rule (up to 200 per domain).
+              一键完成：建 D1 数据库并部署邮件 Worker。每个域名都需要先在 Cloudflare 面板里{" "}
+              <span className="font-medium">手动开启</span>邮件路由（见上）。开启后，每建一个收件箱就会自动登记一条路由规则（单域上限 200 条）。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={provision} disabled={!s?.configured || provisioning || cleaning}>
                 {provisioning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {s?.provisioned ? "Re-deploy worker" : "Provision now"}
+                {s?.provisioned ? "重新部署 Worker" : "立即初始化"}
               </Button>
 
               <Dialog open={cleanupOpen} onOpenChange={(o) => { setCleanupOpen(o); if (!o) setConfirmText(""); }}>
                 <DialogTrigger asChild>
                   <Button variant="destructive" disabled={!s?.configured || !s?.provisioned || provisioning || cleaning}>
                     {cleaning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-                    Clean up everything
+                    清空全部资源
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-destructive" /> Destroy all AgentBox resources?
+                      <AlertTriangle className="h-5 w-5 text-destructive" /> 销毁 AgentBox 创建的全部资源？
                     </DialogTitle>
                     <DialogDescription asChild>
                       <div className="space-y-3 pt-1">
-                        <p className="font-medium text-foreground">This action is permanent and cannot be undone.</p>
-                        <p>The following Cloudflare resources will be deleted:</p>
+                        <p className="font-medium text-foreground">此操作不可撤销。</p>
+                        <p>将删除以下 Cloudflare 资源：</p>
                         <ul className="list-disc space-y-1 pl-5 text-sm">
-                          <li>All per-address routing rules for <span className="font-mono">{s?.domain || "yourdomain"}</span> — new mail stops arriving immediately</li>
-                          <li>The <span className="font-mono">agentbox-email</span> Worker</li>
-                          <li>The R2 bucket and all stored attachments (if enabled)</li>
-                          <li>The D1 database — including <b>every stored email</b>, inbox, and account</li>
+                          <li><span className="font-mono">{s?.domain || "yourdomain"}</span> 的全部地址级路由规则 —— 新邮件会立刻停止投递</li>
+                          <li>Worker <span className="font-mono">agentbox-email</span></li>
+                          <li>R2 存储桶及全部已存附件（若已启用）</li>
+                          <li>D1 数据库 —— 包括<b>全部已存邮件</b>、收件箱与账号</li>
                         </ul>
                         <p className="text-sm">
-                          Your Cloudflare API token and domain stay saved, so you can re-provision a clean setup afterwards.
+                          Cloudflare API 令牌与域名配置会保留，之后可以重新初始化一套干净的。
                         </p>
                       </div>
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-2">
                     <Label htmlFor="confirm" className="text-sm">
-                      Type <span className="font-mono font-semibold text-destructive">CLEANUP</span> to confirm
+                      输入 <span className="font-mono font-semibold text-destructive">CLEANUP</span> 以确认
                     </Label>
                     <Input
                       id="confirm"
@@ -402,10 +401,10 @@ export default function SettingsPage() {
                     />
                   </div>
                   <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-                    <Button variant="ghost" onClick={() => setCleanupOpen(false)} disabled={cleaning}>Cancel</Button>
+                    <Button variant="ghost" onClick={() => setCleanupOpen(false)} disabled={cleaning}>取消</Button>
                     <Button variant="destructive" onClick={cleanup} disabled={cleaning || confirmText !== "CLEANUP"}>
                       {cleaning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Destroy everything
+                      销毁全部
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -437,13 +436,13 @@ export default function SettingsPage() {
               Remove domain
             </DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove <span className="font-mono font-medium text-foreground">{pendingRemoveDomain}</span>? 
-              All email routing rules for this domain will be deleted. This cannot be undone.
+              确定要移除 <span className="font-mono font-medium text-foreground">{pendingRemoveDomain}</span>? 
+              该域名的全部邮件路由规则都会被删除，且不可撤销。
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
-            <Button variant="outline" onClick={() => setRemoveDomainOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={doRemoveDomain}>Remove domain</Button>
+            <Button variant="outline" onClick={() => setRemoveDomainOpen(false)}>取消</Button>
+            <Button variant="destructive" onClick={doRemoveDomain}>移除域名</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -456,25 +455,25 @@ export default function SettingsPage() {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-violet-500/25 bg-violet-500/10 text-violet-400">
                 <Clock className="h-[22px] w-[22px]" />
               </div>
-              <CardTitle className="text-xs font-bold uppercase tracking-tight">Auto cleanup</CardTitle>
+              <CardTitle className="text-xs font-bold uppercase tracking-tight">自动清理</CardTitle>
               {s?.retentionSeconds ? (
                 <Badge className="ml-auto gap-1.5 border-violet-500/30 bg-violet-500/15 text-violet-600 dark:text-violet-400" variant="outline">
                   {RETENTION_PRESETS.find((p) => p.seconds === s.retentionSeconds)?.label ??
-                    `${Math.round(s.retentionSeconds / 60)} min`}
+                    `${Math.round(s.retentionSeconds / 60)} 分钟`}
                 </Badge>
               ) : (
-                <Badge className="ml-auto gap-1.5" variant="outline">Off</Badge>
+                <Badge className="ml-auto gap-1.5" variant="outline">关闭</Badge>
               )}
             </div>
             <CardDescription>
-              Delete mail automatically once it is older than the chosen age. Cleanup runs on a
-              one-minute Cloudflare cron, so the effective delay is your setting plus up to a minute.
-              Inboxes you created by hand are kept; auto-created ones disappear with their mail.
+              邮件超过设定时长后自动删除。清理由 Cloudflare 的一分钟定时任务执行，
+              所以实际生效时间 = 你设的时长 + 最多一分钟。
+              手动创建的收件箱会保留；自动创建的会随邮件一起消失。
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Keep mail for</Label>
+              <Label>邮件保留时长</Label>
               <Select value={retentionPick} onValueChange={setRetentionPick} disabled={savingRetention}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
@@ -490,7 +489,7 @@ export default function SettingsPage() {
             {retentionPick === "custom" && (
               <div className="flex items-end gap-2">
                 <div className="flex-1 space-y-2">
-                  <Label htmlFor="ret-n">Amount</Label>
+                  <Label htmlFor="ret-n">数量</Label>
                   <Input
                     id="ret-n"
                     type="number"
@@ -502,15 +501,15 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="w-36 space-y-2">
-                  <Label>Unit</Label>
+                  <Label>单位</Label>
                   <Select value={retentionCustomUnit} onValueChange={setRetentionCustomUnit} disabled={savingRetention}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="minutes">minutes</SelectItem>
-                      <SelectItem value="hours">hours</SelectItem>
-                      <SelectItem value="days">days</SelectItem>
+                      <SelectItem value="minutes">分钟</SelectItem>
+                      <SelectItem value="hours">小时</SelectItem>
+                      <SelectItem value="days">天</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,7 +519,7 @@ export default function SettingsPage() {
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={saveRetention} disabled={savingRetention || !s?.configured}>
                 {savingRetention && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Save policy
+                保存策略
               </Button>
               {s?.retentionSeconds ? (
                 <Button
@@ -538,22 +537,20 @@ export default function SettingsPage() {
                       .then((r) => r.json())
                       .then((d) => {
                         if (d.error) toast.error(d.error);
-                        else toast.success("Cleanup disabled");
+                        else toast.success("已关闭自动清理");
                         load();
                       })
                       .finally(() => setSavingRetention(false));
                   }}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Disable cleanup
+                  关闭自动清理
                 </Button>
               ) : null}
             </div>
 
             <p className="text-xs text-muted-foreground">
-              The cron trigger is installed on the <span className="font-mono">agentbox-email</span> worker
-              the first time you save a policy. Mail is deleted from D1 outright — there is no trash folder,
-              so set a value you are comfortable losing mail at.
+              定时触发器会在你首次保存策略时装到 <span className="font-mono">agentbox-email</span> Worker 上。邮件直接从 D1 删除——没有回收站，所以请设一个你能接受丢信的时长。
             </p>
           </CardContent>
         </Card>
